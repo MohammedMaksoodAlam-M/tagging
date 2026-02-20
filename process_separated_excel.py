@@ -161,8 +161,7 @@ class SeparatedExcelProcessor:
             # Initialize Ollama client if available
             if OLLAMA_AVAILABLE:
                 try:
-                    ollama_config = self.config["ollama"]
-                    self.ollama_client = OllamaClient(ollama_config)
+                    self.ollama_client = OllamaClient()
                     self.logger.info("Ollama client initialized")
                 except Exception as e:
                     self.logger.warning(f"Ollama client unavailable: {e}")

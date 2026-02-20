@@ -517,7 +517,7 @@ Question about "Justice Party in Tamil Nadu during Home Rule Movement"
 
             elif provider == "ollama" and self.ollama_client:
                 self.stats['ollama_requests'] += 1
-                response = self.ollama_client.generate(prompt)
+                response = self.ollama_client.make_request(prompt)
                 return response
 
             else:
