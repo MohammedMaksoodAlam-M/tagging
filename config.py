@@ -8,8 +8,8 @@ import os
 # Ollama Configuration - Using 20B+ model for maximum power
 OLLAMA_CONFIG = {
     "host": "http://localhost:11434",  # Local Ollama server 
-    "model": "gemma2:9b",  # Fast 8B model - much better performance
-    "timeout": 60,  # 1 minute timeout - should be plenty for 8B model
+    "model": "qwen2.5:14b",  # 14B model - best accuracy that fits in 12GB VRAM
+    "timeout": 120,  # 2 minute timeout for larger model
     "temperature": 0.02,  # Ultra-low temperature for maximum consistency
     "top_p": 0.7,  # More focused responses
     "max_retries": 3,  # Standard retries for 8B model
@@ -37,7 +37,7 @@ OPENAI_CONFIG = {
 
 # Provider Configuration - Controls which AI provider to use
 PROVIDER_CONFIG = {
-    "primary_provider": "openai",  # "openai" or "ollama" 
+    "primary_provider": "ollama",  # "openai" or "ollama"
     "auto_fallback": True,  # Automatically fallback to secondary provider
     "fallback_provider": "ollama",  # Secondary provider
     "cost_alert_threshold": 0.8,  # Alert when 80% of budget used
