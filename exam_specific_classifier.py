@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Exam-Specific Question Classifier - Single-stage AI-powered classification
+Exam-Specific Question Classifier - Two-stage AI-powered classification
 
-Classifies questions using exam-specific taxonomies in a single-stage approach:
-- Directly selects the best Subject-Topic-Subtopic triplet from exam-specific options
+Classifies questions using exam-specific taxonomies in a two-stage approach:
+- Stage 1: Identify the subject area (small set of options, high accuracy)
+- Stage 2: Select the exact triplet within that subject (filtered options)
 - Maps "Subject" from taxonomy to "Chapter" in output
 - Supports dual providers: OpenAI (primary) and Ollama (fallback)
 """
@@ -12,7 +13,7 @@ import json
 import logging
 import time
 import os
-from typing import Dict, Optional, Tuple
+from typing import Dict, Optional, List
 from datetime import datetime
 
 # Load environment variables
@@ -43,10 +44,11 @@ except ImportError:
 
 class ExamSpecificClassifier:
     """
-    Single-stage question classifier using exam-specific taxonomies
+    Two-stage question classifier using exam-specific taxonomies
 
-    For each exam type (TNPSC, Banking, SSC-Railways), directly selects
-    the best matching Subject-Topic-Subtopic triplet in one AI call.
+    For each exam type (TNPSC, Banking, SSC-Railways):
+    - Stage 1: Identifies the subject from a small list (3-9 options)
+    - Stage 2: Selects the exact triplet from that subject's options (avg ~77 options)
     """
 
     def __init__(self, exam_type: str, config: Dict, ollama_client=None):
@@ -75,6 +77,14 @@ class ExamSpecificClassifier:
         self.subjects = taxonomy['subjects']
         self.triplets = taxonomy['triplets']
         self.triplet_dict = taxonomy['triplet_dict']
+
+        # Build subject-to-triplets index for Stage 2
+        self.subject_triplets = {}
+        for triplet in self.triplets:
+            subject = triplet.split(" > ")[0]
+            if subject not in self.subject_triplets:
+                self.subject_triplets[subject] = []
+            self.subject_triplets[subject].append(triplet)
 
         # Determine primary and fallback providers
         self.primary_provider = self.provider_config.get("primary_provider", "openai")
@@ -109,11 +119,14 @@ class ExamSpecificClassifier:
             'total_cost_usd': 0.0,
             'cost_savings_usd': 0.0,
             'average_response_time': 0,
+            'low_confidence_count': 0,
+            'subject_detection_failures': 0,
             'start_time': datetime.now()
         }
 
         self.logger.info(f"Exam-specific classifier initialized for {exam_type}")
         self.logger.info(f"  {len(self.subjects)} subjects, {len(self.triplets)} triplets")
+        self.logger.info(f"  Subject triplet counts: {', '.join(f'{s}: {len(ts)}' for s, ts in self.subject_triplets.items())}")
         self.logger.info(f"  Primary: {self.primary_provider}, Fallback: {self.fallback_provider}")
 
     def initialize_providers(self):
@@ -125,7 +138,6 @@ class ExamSpecificClassifier:
 
             if api_key:
                 try:
-                    # Pass FULL config (not just openai_config) - OpenAIClient expects full config
                     self.openai_client = create_openai_client(self.config)
                     self.logger.info("OpenAI client initialized")
                 except Exception as e:
@@ -139,218 +151,119 @@ class ExamSpecificClassifier:
         if self.ollama_client:
             self.logger.info("Ollama client available")
 
-    def create_classification_prompt(self, question: str, explanation: str = "") -> str:
-        """
-        Create prompt for single-stage classification
-
-        Args:
-            question: Question text
-            explanation: Optional explanation text
-
-        Returns:
-            Formatted prompt string
-        """
-        # Combine question and explanation
-        combined_text = question
+    def _build_combined_context(self, question: str, explanation: str = "") -> str:
+        """Build combined question + explanation text"""
+        combined = question
         if explanation and explanation.strip() and explanation.lower() != 'nan':
-            combined_text += f"\n\nExplanation: {explanation}"
+            combined += f"\n\nExplanation: {explanation}"
+        return combined
 
-        # Format available triplets - Show ALL triplets so AI doesn't invent categories
-        triplet_list = self.triplets  # Show all triplets
-        triplets_formatted = "\n".join([f"{i+1}. {t}" for i, t in enumerate(triplet_list)])
+    def create_subject_detection_prompt(self, question: str, explanation: str = "") -> str:
+        """
+        Stage 1: Create prompt to identify the subject area
 
-        # Add special instructions for SSC-Railways
-        special_instructions = ""
-        if self.exam_type == "SSC-Railways":
-            special_instructions = """
-⚠️ SPECIAL INSTRUCTIONS FOR SSC-RAILWAYS:
+        Only sends subject names (3-9 options), not the full triplet list.
+        """
+        combined_context = self._build_combined_context(question, explanation)
 
-SUBJECT MAPPING RULES:
-When you identify what the question is about, use these subject mappings:
-
-📊 SPORTS (cricket, football, olympics, tournaments, athletes, games)
-   → Search the numbered list for: "Static GK > Static GK > Sports"
-   → Select that EXACT triplet
-
-📚 HISTORY (ancient, medieval, modern, dynasties, empires, historical events)
-   → Search the numbered list for triplets starting with: "General Studies > Ancient - History >" OR "General Studies > Medieval - History >" OR "General Studies > Modern - History >"
-   → Find the CLOSEST match and copy it EXACTLY
-
-🗺️ GEOGRAPHY (countries, rivers, mountains, climate, regions, maps)
-   → Search the numbered list for triplets starting with: "General Studies > Geography >"
-   → Find the CLOSEST match and copy it EXACTLY
-
-⚖️ POLITY (government, constitution, laws, parliament, judiciary)
-   → Search the numbered list for triplets starting with: "General Studies > Polity >"
-   → Find the CLOSEST match and copy it EXACTLY
-
-💰 ECONOMY (budget, GDP, banking, finance, trade, economics)
-   → Search the numbered list for triplets starting with: "General Studies > Economy >"
-   → Find the CLOSEST match and copy it EXACTLY
-
-🔬 PHYSICS (motion, energy, electricity, magnetism, laws of physics)
-   → Search the numbered list for triplets starting with: "General Studies > Physics >"
-   → Find the CLOSEST match and copy it EXACTLY
-
-🧪 CHEMISTRY (elements, compounds, reactions, periodic table)
-   → Search the numbered list for triplets starting with: "General Studies > Chemistry >"
-   → Find the CLOSEST match and copy it EXACTLY
-
-🧬 BIOLOGY (animals, plants, human body, cells, life science)
-   → Search the numbered list for triplets starting with: "General Studies > Biology >"
-   → Find the CLOSEST match and copy it EXACTLY
-
-CRITICAL: COPY EXACTLY FROM THE NUMBERED LIST
-✅ Look through the NUMBERED LIST above
-✅ Find a triplet that matches the question topic
-✅ Copy the ENTIRE triplet EXACTLY character-by-character
-✅ Include all three parts: Subject > Topic > Subtopic
-✅ DO NOT invent your own triplets - only use what's in the list
-"""
+        subjects_formatted = "\n".join([f"{i+1}. {s}" for i, s in enumerate(self.subjects)])
 
         prompt = f"""You are classifying a question for the {self.exam_type} exam.
 
-🚨🚨🚨 ABSOLUTE REQUIREMENT 🚨🚨🚨
-YOU MUST ALWAYS SELECT A TRIPLET FROM THE LIST BELOW.
-NEVER return null, None, or empty values for subject, topic, or subtopic.
-Even if no triplet is a perfect match, you MUST select the CLOSEST matching triplet.
-There is ALWAYS a best match - find it and return it.
+QUESTION:
+{combined_context}
 
-QUESTION TO CLASSIFY:
-{combined_text}
+AVAILABLE SUBJECTS (choose exactly one):
+{subjects_formatted}
 
-AVAILABLE SUBJECT > TOPIC > SUBTOPIC COMBINATIONS:
-{triplets_formatted}
-{special_instructions}
+INSTRUCTIONS:
+1. Read the question and explanation carefully
+2. Identify the PRIMARY knowledge domain being tested
+3. Select EXACTLY ONE subject from the list above
+4. Use the EXACT subject name as shown - do not modify it
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚨 CRITICAL INSTRUCTION - READ THIS FIRST 🚨
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-UNDERSTANDING THE LIST STRUCTURE:
-The numbered list above shows ALL valid triplets for this exam.
-Each line has this EXACT format:
-    [NUMBER]. [SUBJECT] > [TOPIC] > [SUBTOPIC]
-
-Example from the list:
-    523. History, Culture, Heritage & Socio-Political Movements in Tamilnadu > Justice Party > Justice Party and the Home Rule Movement
-
-ABSOLUTE RULES YOU MUST FOLLOW:
-1. ✅ YOU CAN ONLY SELECT FROM THE NUMBERED LIST ABOVE
-2. ✅ YOU MUST COPY THE EXACT TEXT - EVERY CHARACTER, SPACE, AND PUNCTUATION MARK
-3. ✅ YOU MUST CITE THE LINE NUMBER WHERE YOU FOUND IT
-4. ❌ YOU CANNOT CREATE YOUR OWN SUBJECT NAMES - ONLY USE WHAT'S IN THE LIST
-5. ❌ YOU CANNOT CREATE YOUR OWN TOPIC NAMES - ONLY USE WHAT'S IN THE LIST
-6. ❌ YOU CANNOT CREATE YOUR OWN SUBTOPIC NAMES - ONLY USE WHAT'S IN THE LIST
-7. ❌ YOU CANNOT MODIFY, SHORTEN, OR PARAPHRASE ANY PART OF THE TRIPLET
-8. ❌ YOU CANNOT COMBINE PARTS FROM DIFFERENT LINES - TAKE THE COMPLETE LINE AS-IS
-
-IF YOUR ANSWER IS NOT FOUND EXACTLY IN THE NUMBERED LIST ABOVE, IT IS WRONG!
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-STEP-BY-STEP REASONING PROCESS (FOLLOW EXACTLY IN THIS ORDER):
-
-STEP 1: UNDERSTAND THE QUESTION
-- Read the question and explanation carefully
-- Identify what specific knowledge area it tests (e.g., "This tests knowledge about Justice Party in Tamil Nadu")
-
-STEP 2: SEARCH FOR MATCHING SUBJECT (EXACT NAME)
-- Scan through the numbered list above
-- Find subjects that might match the knowledge area
-- BE CAREFUL: Some subjects have similar names - you MUST match EXACTLY
-- Example: "History, Culture of India and Indian National Movement" ≠ "History, Culture, Heritage & Socio-Political Movements in Tamilnadu"
-- Write down the EXACT subject name you found (copy character-by-character)
-
-STEP 3: FIND MATCHING TOPIC WITHIN THAT SUBJECT
-- Look only at triplets that start with the exact subject from Step 2
-- Find the topic that best matches the question
-- Write down the EXACT topic name
-
-STEP 4: FIND MATCHING SUBTOPIC WITHIN THAT TOPIC
-- Look only at triplets with the subject AND topic from Steps 2-3
-- Find the subtopic that best matches
-- Write down the EXACT subtopic name
-
-STEP 5: VERIFY THE COMPLETE TRIPLET EXISTS IN THE NUMBERED LIST
-- Scroll through the numbered list and find the EXACT line that matches your triplet
-- Write down the line number (e.g., "Found at line 523")
-- Verify EVERY character matches: Subject name, " > ", Topic name, " > ", Subtopic name
-- If you cannot find this EXACT triplet in the list, YOU MUST GO BACK and choose a different one
-
-STEP 6: RETURN YOUR ANSWER IN JSON FORMAT
-- Copy the exact triplet from that line number
-- Include the line number in your response
-- Provide your complete step-by-step reasoning
-
-REQUIRED OUTPUT FORMAT (JSON ONLY - NO OTHER TEXT):
+REQUIRED OUTPUT FORMAT (JSON only, no other text):
 {{
-    "reasoning_steps": "Step 1: Question tests [specific knowledge area]. Step 2: Searched list and found subject '[EXACT subject name from list]'. Step 3: Within that subject, found topic '[EXACT topic name from list]'. Step 4: Within that topic, found subtopic '[EXACT subtopic name from list]'. Step 5: Verified complete triplet exists at line number [XXX].",
-    "line_number": XXX,
-    "triplet": "Subject > Topic > Subtopic",
-    "subject": "Subject",
-    "topic": "Topic",
-    "subtopic": "Subtopic",
-    "confidence": 0.85
+    "subject": "EXACT_SUBJECT_NAME_FROM_LIST",
+    "confidence": 0.85,
+    "reasoning": "Brief explanation of why this subject"
 }}
 
-⚠️ MANDATORY: The "line_number" field must contain the actual number from the list where you found this triplet.
-⚠️ You MUST always select a triplet from the list - NEVER return null/None values.
-⚠️ If no triplet is a perfect match, select the CLOSEST/BEST matching triplet from the list.
-
-⚠️ CRITICAL WARNINGS - COMMON MISTAKES TO AVOID:
-1. DO NOT mix up similar subject names - verify EXACT character match
-2. DO NOT create your own topics/subtopics - only use what exists in the list
-3. DO NOT abbreviate or paraphrase - copy EXACTLY including spacing and punctuation
-4. DO NOT skip the verification step - confirm the triplet exists in the numbered list
-5. Return ONLY valid JSON, no extra text before or after
-
-EXAMPLE OF CORRECT REASONING:
-Question about "Justice Party in Tamil Nadu during Home Rule Movement"
-
-✓ CORRECT ANSWER:
-{{
-    "reasoning_steps": "Step 1: Question tests knowledge of Justice Party during Home Rule Movement in Tamil Nadu. Step 2: Searched the numbered list and found subject 'History, Culture, Heritage & Socio-Political Movements in Tamilnadu' (NOT 'History, Culture of India and Indian National Movement' - that's different!). Step 3: Within that subject, found topic 'Justice Party'. Step 4: Within that topic, found subtopic 'Justice Party and the Home Rule Movement'. Step 5: Verified complete triplet exists at line number 523.",
-    "line_number": 523,
-    "triplet": "History, Culture, Heritage & Socio-Political Movements in Tamilnadu > Justice Party > Justice Party and the Home Rule Movement",
-    "subject": "History, Culture, Heritage & Socio-Political Movements in Tamilnadu",
-    "topic": "Justice Party",
-    "subtopic": "Justice Party and the Home Rule Movement",
-    "confidence": 0.90
-}}
-
-✗ WRONG ANSWER (THIS WILL FAIL):
-{{
-    "triplet": "History, Culture of India and Indian National Movement > Justice Party > Justice Party and the Home Rule Movement",
-    ...
-}}
-❌ REASON: "History, Culture of India and Indian National Movement" doesn't have any "Justice Party" topics in the list! You mixed up two different subjects!
-"""
+RULES:
+- Pick EXACTLY ONE subject from the numbered list
+- Copy the subject name EXACTLY as shown
+- Return ONLY the JSON, no extra text
+- Base decision on question content, not answer options"""
 
         return prompt
 
-    def parse_classification_response(self, response_text: str) -> Optional[Dict]:
+    def create_triplet_selection_prompt(self, question: str, explanation: str, subject: str, is_retry: bool = False) -> str:
         """
-        Parse AI response to extract classification
+        Stage 2: Create prompt to select exact triplet within the identified subject
 
-        Args:
-            response_text: Raw response from AI
+        Only sends triplets for the matched subject (avg ~77 options instead of all 693).
+        """
+        combined_context = self._build_combined_context(question, explanation)
+
+        # Get triplets for this subject only
+        subject_triplets = self.subject_triplets.get(subject, [])
+        if not subject_triplets:
+            self.logger.error(f"No triplets found for subject: {subject}")
+            return ""
+
+        triplets_formatted = "\n".join([f"{i+1}. {t}" for i, t in enumerate(subject_triplets)])
+
+        retry_note = ""
+        if is_retry:
+            retry_note = """
+NOTE: Your previous attempt was rejected because the triplet was not copied exactly.
+Copy the COMPLETE triplet character-by-character from the list. Do not modify any part."""
+
+        prompt = f"""You are classifying a question for the {self.exam_type} exam.
+The subject has been identified as: {subject}
+
+QUESTION:
+{combined_context}
+
+AVAILABLE TRIPLETS for "{subject}" (choose exactly one):
+{triplets_formatted}
+{retry_note}
+INSTRUCTIONS:
+1. Read the question and explanation carefully
+2. Find the triplet that best matches the question content
+3. Copy the ENTIRE triplet EXACTLY as shown in the list
+4. Extract the three parts: Subject > Topic > Subtopic
+
+REQUIRED OUTPUT FORMAT (JSON only, no other text):
+{{
+    "subject": "{subject}",
+    "topic": "EXACT_TOPIC_FROM_TRIPLET",
+    "subtopic": "EXACT_SUBTOPIC_FROM_TRIPLET",
+    "full_triplet": "EXACT_COMPLETE_TRIPLET_FROM_LIST",
+    "confidence": 0.85,
+    "reasoning": "Brief explanation of selection"
+}}
+
+RULES:
+- Select EXACTLY ONE triplet from the numbered list above
+- Copy EVERY character exactly including spaces and punctuation
+- The subject field MUST be: "{subject}"
+- Return ONLY the JSON, no extra text"""
+
+        return prompt
+
+    def parse_subject_response(self, response_text: str) -> Optional[str]:
+        """
+        Parse Stage 1 response to extract subject
 
         Returns:
-            Dictionary with subject, topic, subtopic or None if parsing fails
+            Subject name string or None if parsing fails
         """
         try:
-            # Check for None response first
-            if response_text is None:
-                self.logger.error("Received None response from AI provider")
+            if not response_text or not isinstance(response_text, str):
+                self.logger.error("Invalid response for subject detection")
                 return None
-            
-            # Ensure response_text is a string
-            if not isinstance(response_text, str):
-                self.logger.error(f"Expected string response, got {type(response_text)}")
-                return None
-            
-            # Try to find JSON in response
+
             response_text = response_text.strip()
 
             # Remove markdown code blocks if present
@@ -360,59 +273,98 @@ Question about "Justice Party in Tamil Nadu during Home Rule Movement"
                 response_text = response_text[3:]
             if response_text.endswith("```"):
                 response_text = response_text[:-3]
+            response_text = response_text.strip()
+
+            data = json.loads(response_text)
+            subject = (data.get('subject') or '').strip()
+
+            if not subject:
+                self.logger.error("Empty subject in response")
+                return None
+
+            # Validate subject exists in our list
+            if subject in self.subjects:
+                return subject
+
+            # Try case-insensitive match
+            for valid_subject in self.subjects:
+                if subject.lower() == valid_subject.lower():
+                    self.logger.info(f"Subject case-corrected: '{subject}' -> '{valid_subject}'")
+                    return valid_subject
+
+            # Try partial match as last resort
+            for valid_subject in self.subjects:
+                if subject.lower() in valid_subject.lower() or valid_subject.lower() in subject.lower():
+                    self.logger.warning(f"Subject fuzzy-matched: '{subject}' -> '{valid_subject}'")
+                    return valid_subject
+
+            self.logger.warning(f"Subject not found in taxonomy: '{subject}'. Valid subjects: {self.subjects}")
+            return None
+
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Failed to parse subject JSON: {e}")
+            return None
+        except Exception as e:
+            self.logger.error(f"Error parsing subject response: {e}")
+            return None
+
+    def parse_triplet_response(self, response_text: str) -> Optional[Dict]:
+        """
+        Parse Stage 2 response to extract triplet classification
+
+        Returns:
+            Dictionary with subject, topic, subtopic or None if parsing fails
+        """
+        try:
+            if not response_text or not isinstance(response_text, str):
+                self.logger.error("Invalid response for triplet selection")
+                return None
 
             response_text = response_text.strip()
 
-            # Parse JSON
+            # Remove markdown code blocks if present
+            if response_text.startswith("```json"):
+                response_text = response_text[7:]
+            if response_text.startswith("```"):
+                response_text = response_text[3:]
+            if response_text.endswith("```"):
+                response_text = response_text[:-3]
+            response_text = response_text.strip()
+
             data = json.loads(response_text)
 
-            # Extract fields with safe None handling
-            subject = data.get('subject') or ''
-            topic = data.get('topic') or ''
-            subtopic = data.get('subtopic') or ''
-            triplet = data.get('triplet') or ''
-            
-            # Safely strip whitespace
-            subject = subject.strip() if subject else ''
-            topic = topic.strip() if topic else ''
-            subtopic = subtopic.strip() if subtopic else ''
-            triplet = triplet.strip() if triplet else ''
+            subject = (data.get('subject') or data.get('chapter') or '').strip()
+            topic = (data.get('topic') or '').strip()
+            subtopic = (data.get('subtopic') or '').strip()
+            full_triplet = (data.get('full_triplet') or data.get('triplet') or '').strip()
             confidence = data.get('confidence', 0.0)
-            reasoning_steps = data.get('reasoning_steps', '')
-            line_number = data.get('line_number', None)
-
-            # Log reasoning steps and line number (helps debug classification)
-            if reasoning_steps:
-                self.logger.debug(f"AI Reasoning: {reasoning_steps}")
-            if line_number:
-                self.logger.info(f"Selected from line #{line_number}: {triplet}")
+            reasoning = data.get('reasoning', '')
 
             if not (subject and topic and subtopic):
-                self.logger.error(f"Missing required fields in response. Got: subject='{subject}', topic='{topic}', subtopic='{subtopic}'")
-                self.logger.error(f"Full parsed data: {data}")
+                self.logger.error(f"Missing fields: subject='{subject}', topic='{topic}', subtopic='{subtopic}'")
                 return None
 
             return {
                 'subject': subject,
                 'topic': topic,
                 'subtopic': subtopic,
-                'triplet': triplet,
+                'triplet': full_triplet,
                 'confidence': confidence,
-                'reasoning_steps': reasoning_steps,
-                'line_number': line_number
+                'reasoning': reasoning
             }
 
         except json.JSONDecodeError as e:
-            self.logger.error(f"Failed to parse JSON response: {e}")
-            self.logger.debug(f"Response text: {response_text}")
+            self.logger.error(f"Failed to parse triplet JSON: {e}")
             return None
         except Exception as e:
-            self.logger.error(f"Error parsing response: {e}")
+            self.logger.error(f"Error parsing triplet response: {e}")
             return None
 
     def validate_classification(self, result: Dict) -> bool:
         """
-        Validate that classification exists in exam-specific taxonomy with enhanced debugging
+        Validate that classification exists in exam-specific taxonomy
+
+        No auto-correction by line number - only accepts exact matches.
 
         Args:
             result: Classification result dictionary
@@ -420,77 +372,45 @@ Question about "Justice Party in Tamil Nadu during Home Rule Movement"
         Returns:
             True if valid, False otherwise
         """
-        triplet = result.get('triplet', '')
         subject = result.get('subject', '')
         topic = result.get('topic', '')
         subtopic = result.get('subtopic', '')
-        line_number = result.get('line_number')
 
         # Construct the triplet for validation
         constructed_triplet = f"{subject} > {topic} > {subtopic}"
 
         # Check if constructed triplet exists in taxonomy
         if constructed_triplet in self.triplet_dict:
-            result['triplet'] = constructed_triplet  # Ensure consistency
+            result['triplet'] = constructed_triplet
             return True
 
-        # If direct triplet was provided, also check it
-        if triplet and triplet in self.triplet_dict:
-            return True
+        # If full_triplet was provided, also check it
+        full_triplet = result.get('triplet', '')
+        if full_triplet and full_triplet in self.triplet_dict:
+            # Use the validated full_triplet to correct the individual parts
+            parts = full_triplet.split(" > ")
+            if len(parts) == 3:
+                result['subject'] = parts[0]
+                result['topic'] = parts[1]
+                result['subtopic'] = parts[2]
+                return True
 
-        # AUTO-CORRECTION: If line number is valid, use the actual triplet from that line
-        if line_number:
-            try:
-                line_idx = int(line_number) - 1  # Convert to 0-based index
-                if 0 <= line_idx < len(self.triplets):
-                    actual_triplet = self.triplets[line_idx]
-                    if actual_triplet in self.triplet_dict:
-                        # Auto-correct using the line number
-                        parts = actual_triplet.split(" > ")
-                        if len(parts) == 3:
-                            self.logger.info(f"Auto-correcting from line #{line_number}: {actual_triplet}")
-                            result['subject'] = parts[0]
-                            result['topic'] = parts[1]
-                            result['subtopic'] = parts[2]
-                            result['triplet'] = actual_triplet
-                            return True
-            except (ValueError, TypeError):
-                pass
+        # Validation failed - log details for debugging
+        self.logger.warning(f"Validation failed for {self.exam_type}: {constructed_triplet}")
 
-        # Enhanced debugging for validation failures
-        self.logger.warning(f"Classification not found in {self.exam_type} taxonomy: {constructed_triplet}")
-
-        # Check if individual components exist in other combinations
-        subject_matches = [t for t in self.triplets if t.startswith(subject + " >")]
-        if subject_matches:
-            self.logger.info(f"Subject '{subject}' exists in {len(subject_matches)} valid triplets")
-            if len(subject_matches) <= 5:  # Show a few examples
-                for match in subject_matches[:3]:
-                    self.logger.info(f"  Valid example: {match}")
+        # Check if subject exists
+        subject_triplets = self.subject_triplets.get(subject, [])
+        if subject_triplets:
+            self.logger.info(f"Subject '{subject}' has {len(subject_triplets)} valid triplets")
+            # Show first few for debugging
+            for t in subject_triplets[:3]:
+                self.logger.debug(f"  Valid: {t}")
         else:
-            # Check for similar subjects (fuzzy matching)
-            similar_subjects = []
-            for valid_triplet in self.triplets:
-                valid_subject = valid_triplet.split(" > ")[0]
-                if subject.lower() in valid_subject.lower() or valid_subject.lower() in subject.lower():
-                    similar_subjects.append(valid_subject)
-
-            if similar_subjects:
-                unique_similar = list(set(similar_subjects))[:3]
-                self.logger.warning(f"Subject '{subject}' not found. Similar subjects: {unique_similar}")
-
-        # Log line number mismatch for debugging
-        if line_number:
-            try:
-                line_idx = int(line_number) - 1
-                if 0 <= line_idx < len(self.triplets):
-                    actual_triplet = self.triplets[line_idx]
-                    if actual_triplet != constructed_triplet:
-                        self.logger.warning(f"Line number mismatch! Line {line_number} contains: '{actual_triplet}', but AI claimed: '{constructed_triplet}'")
-                else:
-                    self.logger.warning(f"Invalid line number {line_number}. Valid range: 1-{len(self.triplets)}")
-            except (ValueError, TypeError):
-                self.logger.warning(f"Invalid line number format: {line_number}")
+            similar = [s for s in self.subjects if subject.lower() in s.lower() or s.lower() in subject.lower()]
+            if similar:
+                self.logger.warning(f"Subject '{subject}' not found. Similar: {similar}")
+            else:
+                self.logger.warning(f"Subject '{subject}' not found in any form. Valid: {self.subjects}")
 
         return False
 
@@ -528,124 +448,162 @@ Question about "Justice Party in Tamil Nadu during Home Rule Movement"
             self.logger.error(f"Error calling {provider}: {e}")
             return None
 
+    def _call_provider_with_fallback(self, prompt: str) -> Optional[str]:
+        """Call primary provider, fall back to secondary if needed"""
+        response = self.classify_with_provider(prompt, self.primary_provider)
+
+        if not response and self.auto_fallback:
+            self.logger.info(f"Primary provider failed, falling back to {self.fallback_provider}")
+            self.stats['provider_fallbacks'] += 1
+            response = self.classify_with_provider(prompt, self.fallback_provider)
+
+        return response
+
+    def _detect_subject(self, question: str, explanation: str) -> Optional[str]:
+        """
+        Stage 1: Detect the subject area
+
+        Tries up to 2 attempts to get a valid subject.
+        """
+        for attempt in range(2):
+            prompt = self.create_subject_detection_prompt(question, explanation)
+
+            if attempt > 0:
+                prompt += "\n\nNOTE: Previous attempt returned an invalid subject. Please select EXACTLY from the numbered list."
+
+            response = self._call_provider_with_fallback(prompt)
+            if not response:
+                continue
+
+            subject = self.parse_subject_response(response)
+            if subject:
+                self.logger.info(f"Stage 1 - Subject detected: {subject} (attempt {attempt + 1})")
+                return subject
+
+            self.logger.warning(f"Stage 1 - Invalid subject on attempt {attempt + 1}")
+
+        self.stats['subject_detection_failures'] += 1
+        return None
+
+    def _select_triplet(self, question: str, explanation: str, subject: str) -> Optional[Dict]:
+        """
+        Stage 2: Select exact triplet within the detected subject
+
+        Tries up to 3 attempts with enhanced prompts on retry.
+        """
+        validation_config = self.config.get("validation", {})
+        max_retries = validation_config.get("max_validation_retries", 3)
+
+        for attempt in range(max_retries):
+            is_retry = attempt > 0
+            prompt = self.create_triplet_selection_prompt(question, explanation, subject, is_retry)
+
+            if not prompt:
+                return None
+
+            if attempt > 0:
+                self.logger.info(f"Stage 2 - Retry {attempt + 1}/{max_retries}")
+
+            response = self._call_provider_with_fallback(prompt)
+            if not response:
+                continue
+
+            result = self.parse_triplet_response(response)
+            if not result:
+                self.logger.warning(f"Stage 2 - Failed to parse response on attempt {attempt + 1}")
+                continue
+
+            # Validate against taxonomy
+            if self.validate_classification(result):
+                self.logger.info(f"Stage 2 - Validated on attempt {attempt + 1}: {result['triplet']}")
+                return result
+            else:
+                self.stats['validation_failures'] += 1
+                self.logger.warning(f"Stage 2 - Validation failed on attempt {attempt + 1}")
+
+        return None
+
     def classify_question(self, question: str, explanation: str = "") -> Optional[Dict]:
         """
-        Classify a question using single-stage approach
+        Classify a question using two-stage approach
+
+        Stage 1: Identify subject (3-9 options)
+        Stage 2: Select exact triplet within that subject (avg ~77 options)
 
         Args:
             question: Question text
             explanation: Optional explanation text
 
         Returns:
-            Dictionary with chapter, topic, subtopic or None if failed
+            Dictionary with subject, topic, subtopic or None if failed
         """
         start_time = time.time()
         self.stats['total_classifications'] += 1
 
         try:
+            # Validate question length
+            min_length = self.config.get("validation", {}).get("min_question_length", 10)
+            max_length = self.config.get("validation", {}).get("max_question_length", 2000)
+
+            question_stripped = question.strip() if question else ""
+            if len(question_stripped) < min_length:
+                self.logger.warning(f"Question too short ({len(question_stripped)} chars < {min_length}), skipping")
+                self.stats['failed_classifications'] += 1
+                return None
+
+            if len(question_stripped) > max_length:
+                self.logger.info(f"Question truncated from {len(question_stripped)} to {max_length} chars")
+                question_stripped = question_stripped[:max_length]
+
             # Try rule-based classification first
-            if (self.rule_classifier and 
-                self.rule_based_config.get("enabled", True) and 
+            if (self.rule_classifier and
+                self.rule_based_config.get("enabled", True) and
                 self.rule_based_config.get("priority") == "before_ai"):
-                
-                rule_result = self.rule_classifier.classify_question(question, self.exam_type)
-                
+
+                rule_result = self.rule_classifier.classify_question(question_stripped, self.exam_type)
+
                 if rule_result.matched:
-                    # Rule matched - use rule-based classification
-                    self.stats['rule_based_matches'] += 1
-                    
-                    # Calculate cost savings (approximate cost per question)
-                    cost_savings = 0.000054  # Approximate cost per question with GPT-4o mini
-                    self.stats['cost_savings_usd'] += cost_savings
-                    
-                    classification = {
+                    # Validate rule-based result against taxonomy
+                    rule_classification = {
                         'subject': rule_result.rule.chapter,
                         'topic': rule_result.rule.topic,
                         'subtopic': rule_result.rule.subtopic,
                         'confidence': rule_result.confidence
                     }
-                    
-                    # Update statistics
-                    self.stats['successful_classifications'] += 1
-                    elapsed = time.time() - start_time
-                    
-                    # Update average response time
-                    total = self.stats['total_classifications']
-                    current_avg = self.stats['average_response_time']
-                    self.stats['average_response_time'] = ((current_avg * (total - 1)) + elapsed) / total
-                    
-                    if self.rule_based_config.get("log_matches", True):
-                        self.logger.info(f"Rule-based classification: {classification['subject']} > "
-                                       f"{classification['topic']} > {classification['subtopic']} "
-                                       f"(rule: {rule_result.rule.description})")
-                    
-                    return classification
-            
-            # No rule matched or rule-based disabled - proceed with AI classification with retry
-            validation_config = self.config.get("validation", {})
-            max_retries = validation_config.get("max_validation_retries", 3)
-            for attempt in range(max_retries):
-                # Create prompt
-                prompt = self.create_classification_prompt(question, explanation)
-                
-                if attempt > 0:
-                    self.logger.info(f"Retry attempt {attempt + 1}/{max_retries} for validation failure")
-                    # Add stricter instructions for retries
-                    prompt += f"""
 
-🚨 RETRY ATTEMPT {attempt + 1} - VALIDATION FAILED BEFORE 🚨
+                    constructed = f"{rule_classification['subject']} > {rule_classification['topic']} > {rule_classification['subtopic']}"
+                    if constructed in self.triplet_dict:
+                        self.stats['rule_based_matches'] += 1
+                        self.stats['cost_savings_usd'] += 0.000054
+                        self.stats['successful_classifications'] += 1
 
-Your previous classification was REJECTED because it was not found in the taxonomy.
-This means you either:
-1. Created a triplet that doesn't exist in the numbered list
-2. Made a typo in copying the exact text
-3. Mixed up subjects/topics/subtopics from different lines
+                        elapsed = time.time() - start_time
+                        total = self.stats['total_classifications']
+                        current_avg = self.stats['average_response_time']
+                        self.stats['average_response_time'] = ((current_avg * (total - 1)) + elapsed) / total
 
-DOUBLE-CHECK YOUR WORK:
-- Find the EXACT line number in the numbered list above
-- Copy EVERY character exactly (including spaces, punctuation, capitalization)
-- Do NOT create custom names - only use what's in the list
-- Verify the complete triplet exists before submitting
+                        if self.rule_based_config.get("log_matches", True):
+                            self.logger.info(f"Rule-based: {constructed} (rule: {rule_result.rule.description})")
 
-"""
+                        return rule_classification
+                    else:
+                        self.logger.warning(f"Rule-based triplet not in taxonomy: {constructed}. Falling through to AI.")
 
-                # Try primary provider
-                self.logger.debug(f"Attempting classification with {self.primary_provider} (attempt {attempt + 1})")
-                response_text = self.classify_with_provider(prompt, self.primary_provider)
-
-                # If primary fails and auto-fallback enabled, try fallback
-                if not response_text and self.auto_fallback:
-                    self.logger.info(f"Primary provider failed, falling back to {self.fallback_provider}")
-                    self.stats['provider_fallbacks'] += 1
-                    response_text = self.classify_with_provider(prompt, self.fallback_provider)
-
-                if not response_text:
-                    self.logger.error(f"All providers failed on attempt {attempt + 1}")
-                    continue
-
-                # Parse response
-                result = self.parse_classification_response(response_text)
-                if not result:
-                    self.logger.error(f"Failed to parse response on attempt {attempt + 1}")
-                    continue
-
-                # Validate classification
-                if self.validate_classification(result):
-                    self.logger.info(f"Validation successful on attempt {attempt + 1}")
-                    break
-                else:
-                    self.logger.warning(f"Classification validation failed on attempt {attempt + 1}")
-                    self.stats['validation_failures'] += 1
-                    if attempt == max_retries - 1:
-                        self.logger.error(f"All {max_retries} attempts failed validation")
-                        self.stats['failed_classifications'] += 1
-                        return None
-            else:
-                # All retries exhausted without success
+            # Stage 1: Detect subject
+            subject = self._detect_subject(question_stripped, explanation)
+            if not subject:
+                self.logger.error("Stage 1 failed: Could not detect subject")
                 self.stats['failed_classifications'] += 1
                 return None
 
-            # Map AI result to output format
+            # Stage 2: Select exact triplet within subject
+            result = self._select_triplet(question_stripped, explanation, subject)
+            if not result:
+                self.logger.error(f"Stage 2 failed for subject '{subject}'")
+                self.stats['failed_classifications'] += 1
+                return None
+
+            # Build classification output
             classification = {
                 'subject': result['subject'],
                 'topic': result['topic'],
@@ -653,11 +611,18 @@ DOUBLE-CHECK YOUR WORK:
                 'confidence': result.get('confidence', 0.0)
             }
 
+            # Check confidence threshold
+            confidence_threshold = self.config.get("prompt", {}).get("confidence_threshold", 0.7)
+            if classification['confidence'] < confidence_threshold:
+                self.stats['low_confidence_count'] += 1
+                self.logger.warning(
+                    f"Low confidence ({classification['confidence']:.2f} < {confidence_threshold}): "
+                    f"{classification['subject']} > {classification['topic']} > {classification['subtopic']}"
+                )
+
             # Update statistics
             self.stats['successful_classifications'] += 1
             elapsed = time.time() - start_time
-
-            # Update average response time
             total = self.stats['total_classifications']
             current_avg = self.stats['average_response_time']
             self.stats['average_response_time'] = ((current_avg * (total - 1)) + elapsed) / total
@@ -720,6 +685,9 @@ if __name__ == "__main__":
             print(f"  Initialized successfully")
             print(f"  Subjects: {len(classifier.subjects)}")
             print(f"  Triplets: {stats['taxonomy_size']}")
+            print(f"  Subject breakdown:")
+            for subject, triplets in classifier.subject_triplets.items():
+                print(f"    {subject}: {len(triplets)} triplets")
         except Exception as e:
             print(f"  Error: {e}")
 

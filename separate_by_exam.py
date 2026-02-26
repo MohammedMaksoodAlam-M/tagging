@@ -142,8 +142,8 @@ class ExamSeparator:
         # OptionE has content, check what it is
         option_e_str = str(option_e).strip()
 
-        # Rule 1: OptionE is exactly "Answer not known" → TNPSC
-        if option_e_str == "Answer not known":
+        # Rule 1: OptionE is "Answer not known" (case-insensitive) → TNPSC
+        if option_e_str.lower() == "answer not known":
             return 'tnpsc'
 
         # Rule 2: OptionE has content but NOT "Answer not known" → Banking

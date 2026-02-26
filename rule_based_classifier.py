@@ -171,7 +171,7 @@ def create_default_rules() -> List[ClassificationRule]:
         pattern=r"^In the question,?\s*two\s+quantities?\s+I\s+and\s+II\s+are\s+given",
         exam_type="Banking",
         chapter="Aptitude",
-        topic="Quantity Comparision",  # Note: Keep original spelling from taxonomy
+        topic="Quantity Comparison",  # Fixed spelling (was "Comparision" in source data)
         subtopic="Quantity I & II (All Arithmetic topic)",
         description="Quantity comparison questions with quantities I and II",
         case_sensitive=False

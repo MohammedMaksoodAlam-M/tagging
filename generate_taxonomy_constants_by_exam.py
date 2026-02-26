@@ -123,6 +123,38 @@ class TaxonomyGenerator:
                 topic = re.sub(r'\s+', ' ', topic).strip()
                 subtopic = re.sub(r'\s+', ' ', subtopic).strip()
 
+                # Strip trailing punctuation from topics and subtopics
+                # (but preserve Tamil/Unicode text periods which are part of the content)
+                def strip_trailing_punct(text):
+                    """Strip trailing commas, semicolons, colons from text.
+                    Strip trailing periods only from ASCII text (not Tamil/Unicode)."""
+                    text = text.rstrip(',;:')
+                    # Only strip trailing period if text is primarily ASCII
+                    if text and text[-1] == '.' and all(ord(c) < 256 for c in text[:-1].replace(' ', '')):
+                        text = text.rstrip('.')
+                    return text
+
+                topic = strip_trailing_punct(topic)
+                subtopic = strip_trailing_punct(subtopic)
+
+                # Known spelling corrections from source data
+                SPELLING_CORRECTIONS = {
+                    "Constiution": "Constitution",
+                    "Comparision": "Comparison",
+                    "COMPARISION": "COMPARISON",
+                    "Mathamatical": "Mathematical",
+                }
+                for wrong, right in SPELLING_CORRECTIONS.items():
+                    if wrong in subject:
+                        print(f"  Auto-correcting '{wrong}' -> '{right}' in subject: {subject}")
+                        subject = subject.replace(wrong, right)
+                    if wrong in topic:
+                        print(f"  Auto-correcting '{wrong}' -> '{right}' in topic: {topic}")
+                        topic = topic.replace(wrong, right)
+                    if wrong in subtopic:
+                        print(f"  Auto-correcting '{wrong}' -> '{right}' in subtopic: {subtopic}")
+                        subtopic = subtopic.replace(wrong, right)
+
                 # Create triplet string
                 triplet = f"{subject} > {topic} > {subtopic}"
                 triplets.append(triplet)

@@ -133,7 +133,7 @@ class SeparatedExcelProcessor:
                 self.logger.error(f"No Excel files found in {output_folder}")
                 return False
             
-            input_file = excel_files[0]  # Use the single Excel file
+            input_file = max(excel_files, key=os.path.getmtime)  # Use most recently modified file
             self.logger.info(f"Found separated file: {os.path.basename(input_file)}")
             
             # Generate dynamic output filename based on input file

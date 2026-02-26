@@ -64,7 +64,7 @@ class OpenAIClient:
         
         # Configuration
         self.model = self.openai_config.get("model", "gpt-4o-mini")
-        self.max_tokens = self.openai_config.get("max_tokens", 150)
+        self.max_tokens = self.openai_config.get("max_tokens", 800)
         self.temperature = self.openai_config.get("temperature", 0.02)
         self.max_retries = self.openai_config.get("max_retries", 3)
         self.retry_delay = self.openai_config.get("retry_delay", 2)

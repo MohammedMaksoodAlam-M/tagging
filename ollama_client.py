@@ -108,9 +108,9 @@ class OllamaClient:
         if any(keyword in question.lower() for keyword in ["calculate", "compute", "solve", "find", "equation", "%", "percentage"]):
             complexity_multiplier += 0.25
         
-        # Apply multiplier with reasonable bounds for 8B model
+        # Apply multiplier with reasonable bounds
         adaptive_timeout = int(base_timeout * complexity_multiplier)
-        return max(30, min(adaptive_timeout, 90))  # Between 30s-90s for 8B model
+        return max(30, min(adaptive_timeout, self.ollama_config["timeout"]))
     
     def check_circuit_breaker(self) -> bool:
         """Check if circuit breaker allows requests"""
@@ -175,7 +175,9 @@ class OllamaClient:
                             "stream": False,
                             "options": {
                                 "temperature": self.ollama_config["temperature"],
-                                "top_p": self.ollama_config["top_p"]
+                                "top_p": self.ollama_config["top_p"],
+                                "num_ctx": self.ollama_config.get("num_ctx", 32768),
+                                "num_predict": self.ollama_config.get("num_predict", 800),
                             }
                         }
                         
@@ -235,10 +237,12 @@ class OllamaClient:
                     "stream": False,
                     "options": {
                         "temperature": self.ollama_config["temperature"],
-                        "top_p": self.ollama_config["top_p"]
+                        "top_p": self.ollama_config["top_p"],
+                        "num_ctx": self.ollama_config.get("num_ctx", 32768),
+                        "num_predict": self.ollama_config.get("num_predict", 800),
                     }
                 }
-                
+
                 self.logger.info(f"Making request to Ollama (attempt {attempt + 1}) with timeout {adaptive_timeout}s - Question length: {len(question) if question else 'unknown'}")
                 response = requests.post(
                     f"{self.ollama_config['host']}/api/generate",

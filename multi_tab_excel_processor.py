@@ -92,6 +92,12 @@ class MultiTabExcelProcessor:
             # Load each tab
             for sheet_name in excel_file.sheet_names:
                 df = pd.read_excel(excel_file, sheet_name=sheet_name)
+
+                # Ensure classification columns are string dtype (not float64 from empty cells)
+                for col in ['Subject', 'Topic', 'Subtopic']:
+                    if col in df.columns:
+                        df[col] = df[col].astype(object)
+
                 self.tabs[sheet_name] = df
                 self.original_tabs[sheet_name] = df.copy()
 

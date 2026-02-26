@@ -5,26 +5,28 @@ Configuration settings for question tagging system
 
 import os
 
-# Ollama Configuration - Using 20B+ model for maximum power
+# Ollama Configuration - Using 14B model for best accuracy in 12GB VRAM
 OLLAMA_CONFIG = {
-    "host": "http://localhost:11434",  # Local Ollama server 
+    "host": "http://localhost:11434",  # Local Ollama server
     "model": "qwen2.5:14b",  # 14B model - best accuracy that fits in 12GB VRAM
-    "timeout": 120,  # 2 minute timeout for larger model
-    "temperature": 0.02,  # Ultra-low temperature for maximum consistency
+    "timeout": 120,  # 2 minute timeout for 14B model
+    "temperature": 0.1,  # Low temperature for consistency but allows some exploration
     "top_p": 0.7,  # More focused responses
-    "max_retries": 3,  # Standard retries for 8B model
-    "retry_delay": 3  # seconds - shorter delay for faster model
+    "num_ctx": 32768,  # Explicit context window (matches qwen2.5:14b default)
+    "num_predict": 800,  # Limit output tokens for JSON response
+    "max_retries": 3,  # Standard retries
+    "retry_delay": 3  # seconds
 }
 
 # Alternative models to try if primary fails (in order of preference)
-FALLBACK_MODELS = ["llama3:latest", "mistral:7b", "llama3.2:1b"]
+FALLBACK_MODELS = ["qwen2.5:7b", "phi4:14b", "llama3:8b"]
 
 # OpenAI Configuration - GPT-4o mini for cost-effective classification
 OPENAI_CONFIG = {
     "api_key": None,  # Will be loaded from environment variable OPENAI_API_KEY
     "model": "gpt-4o-mini",  # Cost-effective model for classification
     "max_tokens": 800,  # Increased to allow detailed reasoning and complete JSON response
-    "temperature": 0.02,  # Ultra-low temperature for consistency
+    "temperature": 0.1,  # Low temperature for consistency
     "timeout": 30,  # 30 second timeout
     "max_retries": 3,  # Retry on failures
     "retry_delay": 2,  # Delay between retries in seconds

@@ -2,7 +2,7 @@
 """
 Taxonomy Constants - Exam-Specific Taxonomies
 
-Generated on: 2026-02-20 10:47:17
+Generated on: 2026-02-26 07:27:33
 Source: tags/Tags_New.xlsx
 
 Contains exam-specific Subject-Topic-Subtopic taxonomies:
@@ -37,11 +37,11 @@ TNPSC_TRIPLETS: List[str] = [
     "Indian Polity (UNIT 4) > Evolution of Indian Constitution > Government of India Act 1919",
     "Indian Polity (UNIT 4) > Evolution of Indian Constitution > Government of India Act 1935",
     "Indian Polity (UNIT 4) > Evolution of Indian Constitution > India Independence Act 1947",
-    "Indian Polity (UNIT 4) > Making of Indian Constiution > Background-Constituent Assembly",
-    "Indian Polity (UNIT 4) > Making of Indian Constiution > Constituent Assembly",
-    "Indian Polity (UNIT 4) > Making of Indian Constiution > Committees (Major & Minor)",
-    "Indian Polity (UNIT 4) > Making of Indian Constiution > Sources of the constitution",
-    "Indian Polity (UNIT 4) > Making of Indian Constiution > salient features in Indian Constitution",
+    "Indian Polity (UNIT 4) > Making of Indian Constitution > Background-Constituent Assembly",
+    "Indian Polity (UNIT 4) > Making of Indian Constitution > Constituent Assembly",
+    "Indian Polity (UNIT 4) > Making of Indian Constitution > Committees (Major & Minor)",
+    "Indian Polity (UNIT 4) > Making of Indian Constitution > Sources of the constitution",
+    "Indian Polity (UNIT 4) > Making of Indian Constitution > salient features in Indian Constitution",
     "Indian Polity (UNIT 4) > Preamble > Nature of Indian State",
     "Indian Polity (UNIT 4) > Preamble > Objectives of the constitution",
     "Indian Polity (UNIT 4) > Preamble > Significance of the Preamble",
@@ -646,9 +646,9 @@ TNPSC_TRIPLETS: List[str] = [
     "Reasoning (Part B Unit 2) > Alpha numeric reasoning > Analogy",
     "Reasoning (Part B Unit 2) > Alpha numeric reasoning > Coding and decoding",
     "Reasoning (Part B Unit 2) > Alpha numeric reasoning > Missing Letters",
-    "Reasoning (Part B Unit 2) > Number series. > Mathamatical Operations",
-    "Reasoning (Part B Unit 2) > Number series. > Missing numbers",
-    "Reasoning (Part B Unit 2) > Number series. > Series complete",
+    "Reasoning (Part B Unit 2) > Number series > Mathematical Operations",
+    "Reasoning (Part B Unit 2) > Number series > Missing numbers",
+    "Reasoning (Part B Unit 2) > Number series > Series complete",
     "TAMIL LANGUAGE > எழுத்து > பிரித்து எழுதுதல்‌",
     "TAMIL LANGUAGE > எழுத்து > சேர்த்து எழுதுதல்‌",
     "TAMIL LANGUAGE > எழுத்து > சந்திப்பிழை",
@@ -765,29 +765,29 @@ TNPSC_TRIPLET_DICT: Dict[str, Dict[str, str]] = {
         "topic": "Evolution of Indian Constitution",
         "subtopic": "India Independence Act 1947"
     },
-    "Indian Polity (UNIT 4) > Making of Indian Constiution > Background-Constituent Assembly": {
+    "Indian Polity (UNIT 4) > Making of Indian Constitution > Background-Constituent Assembly": {
         "subject": "Indian Polity (UNIT 4)",
-        "topic": "Making of Indian Constiution",
+        "topic": "Making of Indian Constitution",
         "subtopic": "Background-Constituent Assembly"
     },
-    "Indian Polity (UNIT 4) > Making of Indian Constiution > Constituent Assembly": {
+    "Indian Polity (UNIT 4) > Making of Indian Constitution > Constituent Assembly": {
         "subject": "Indian Polity (UNIT 4)",
-        "topic": "Making of Indian Constiution",
+        "topic": "Making of Indian Constitution",
         "subtopic": "Constituent Assembly"
     },
-    "Indian Polity (UNIT 4) > Making of Indian Constiution > Committees (Major & Minor)": {
+    "Indian Polity (UNIT 4) > Making of Indian Constitution > Committees (Major & Minor)": {
         "subject": "Indian Polity (UNIT 4)",
-        "topic": "Making of Indian Constiution",
+        "topic": "Making of Indian Constitution",
         "subtopic": "Committees (Major & Minor)"
     },
-    "Indian Polity (UNIT 4) > Making of Indian Constiution > Sources of the constitution": {
+    "Indian Polity (UNIT 4) > Making of Indian Constitution > Sources of the constitution": {
         "subject": "Indian Polity (UNIT 4)",
-        "topic": "Making of Indian Constiution",
+        "topic": "Making of Indian Constitution",
         "subtopic": "Sources of the constitution"
     },
-    "Indian Polity (UNIT 4) > Making of Indian Constiution > salient features in Indian Constitution": {
+    "Indian Polity (UNIT 4) > Making of Indian Constitution > salient features in Indian Constitution": {
         "subject": "Indian Polity (UNIT 4)",
-        "topic": "Making of Indian Constiution",
+        "topic": "Making of Indian Constitution",
         "subtopic": "salient features in Indian Constitution"
     },
     "Indian Polity (UNIT 4) > Preamble > Nature of Indian State": {
@@ -3810,19 +3810,19 @@ TNPSC_TRIPLET_DICT: Dict[str, Dict[str, str]] = {
         "topic": "Alpha numeric reasoning",
         "subtopic": "Missing Letters"
     },
-    "Reasoning (Part B Unit 2) > Number series. > Mathamatical Operations": {
+    "Reasoning (Part B Unit 2) > Number series > Mathematical Operations": {
         "subject": "Reasoning (Part B Unit 2)",
-        "topic": "Number series.",
-        "subtopic": "Mathamatical Operations"
+        "topic": "Number series",
+        "subtopic": "Mathematical Operations"
     },
-    "Reasoning (Part B Unit 2) > Number series. > Missing numbers": {
+    "Reasoning (Part B Unit 2) > Number series > Missing numbers": {
         "subject": "Reasoning (Part B Unit 2)",
-        "topic": "Number series.",
+        "topic": "Number series",
         "subtopic": "Missing numbers"
     },
-    "Reasoning (Part B Unit 2) > Number series. > Series complete": {
+    "Reasoning (Part B Unit 2) > Number series > Series complete": {
         "subject": "Reasoning (Part B Unit 2)",
-        "topic": "Number series.",
+        "topic": "Number series",
         "subtopic": "Series complete"
     },
     "TAMIL LANGUAGE > எழுத்து > பிரித்து எழுதுதல்‌": {
@@ -4246,12 +4246,12 @@ BANKING_TRIPLETS: List[str] = [
     "Reasoning > Other puzzle > Matrix based puzzle",
     "Reasoning > Other puzzle > Order & Ranking Puzzle",
     "Reasoning > Other puzzle > Pyramid Puzzle",
-    "Reasoning > Coding decoding > Letter coding,",
-    "Reasoning > Coding decoding > Symbol digit coding,",
-    "Reasoning > Coding decoding > Coding in fictitious language,",
-    "Reasoning > Coding decoding > Coding based on condition,",
-    "Reasoning > Coding decoding > Problems based on new types: Letters; symbols and numbers;",
-    "Reasoning > Coding decoding > Box type coding and decoding;",
+    "Reasoning > Coding decoding > Letter coding",
+    "Reasoning > Coding decoding > Symbol digit coding",
+    "Reasoning > Coding decoding > Coding in fictitious language",
+    "Reasoning > Coding decoding > Coding based on condition",
+    "Reasoning > Coding decoding > Problems based on new types: Letters; symbols and numbers",
+    "Reasoning > Coding decoding > Box type coding and decoding",
     "Reasoning > Direction > Normal",
     "Reasoning > Direction > Coded direction",
     "Reasoning > Blood relation > Normal",
@@ -4321,7 +4321,7 @@ BANKING_TRIPLETS: List[str] = [
     "Aptitude > Quadratic Equation > New pattern QE",
     "Aptitude > Quadratic Equation > Simplification",
     "Aptitude > Quadratic Equation > Approximation",
-    "Aptitude > Quantity Comparision > Quantity I & II (All Arithmetic topic)",
+    "Aptitude > Quantity Comparison > Quantity I & II (All Arithmetic topic)",
     "Aptitude > Data sufficiency > 2 statement (All Arithmetic topic)",
     "Aptitude > Data sufficiency > 3 Statement (All Arithmetic topic)",
     "Aptitude > Ratio Proportion > Statement Question",
@@ -4652,35 +4652,35 @@ BANKING_TRIPLET_DICT: Dict[str, Dict[str, str]] = {
         "topic": "Other puzzle",
         "subtopic": "Pyramid Puzzle"
     },
-    "Reasoning > Coding decoding > Letter coding,": {
+    "Reasoning > Coding decoding > Letter coding": {
         "subject": "Reasoning",
         "topic": "Coding decoding",
-        "subtopic": "Letter coding,"
+        "subtopic": "Letter coding"
     },
-    "Reasoning > Coding decoding > Symbol digit coding,": {
+    "Reasoning > Coding decoding > Symbol digit coding": {
         "subject": "Reasoning",
         "topic": "Coding decoding",
-        "subtopic": "Symbol digit coding,"
+        "subtopic": "Symbol digit coding"
     },
-    "Reasoning > Coding decoding > Coding in fictitious language,": {
+    "Reasoning > Coding decoding > Coding in fictitious language": {
         "subject": "Reasoning",
         "topic": "Coding decoding",
-        "subtopic": "Coding in fictitious language,"
+        "subtopic": "Coding in fictitious language"
     },
-    "Reasoning > Coding decoding > Coding based on condition,": {
+    "Reasoning > Coding decoding > Coding based on condition": {
         "subject": "Reasoning",
         "topic": "Coding decoding",
-        "subtopic": "Coding based on condition,"
+        "subtopic": "Coding based on condition"
     },
-    "Reasoning > Coding decoding > Problems based on new types: Letters; symbols and numbers;": {
+    "Reasoning > Coding decoding > Problems based on new types: Letters; symbols and numbers": {
         "subject": "Reasoning",
         "topic": "Coding decoding",
-        "subtopic": "Problems based on new types: Letters; symbols and numbers;"
+        "subtopic": "Problems based on new types: Letters; symbols and numbers"
     },
-    "Reasoning > Coding decoding > Box type coding and decoding;": {
+    "Reasoning > Coding decoding > Box type coding and decoding": {
         "subject": "Reasoning",
         "topic": "Coding decoding",
-        "subtopic": "Box type coding and decoding;"
+        "subtopic": "Box type coding and decoding"
     },
     "Reasoning > Direction > Normal": {
         "subject": "Reasoning",
@@ -5027,9 +5027,9 @@ BANKING_TRIPLET_DICT: Dict[str, Dict[str, str]] = {
         "topic": "Quadratic Equation",
         "subtopic": "Approximation"
     },
-    "Aptitude > Quantity Comparision > Quantity I & II (All Arithmetic topic)": {
+    "Aptitude > Quantity Comparison > Quantity I & II (All Arithmetic topic)": {
         "subject": "Aptitude",
-        "topic": "Quantity Comparision",
+        "topic": "Quantity Comparison",
         "subtopic": "Quantity I & II (All Arithmetic topic)"
     },
     "Aptitude > Data sufficiency > 2 statement (All Arithmetic topic)": {
@@ -5612,15 +5612,15 @@ SSC_RAILWAYS_TRIPLETS: List[str] = [
     "Reasoning > mathematical operation > coding decoding based",
     "Reasoning > mathematical operation > Interchanging the signs",
     "Reasoning > mathematical operation > equation balancing",
-    "Reasoning > Seating arrangement > Linear Arrangement:",
-    "Reasoning > Seating arrangement > Double Row Arrangement:",
-    "Reasoning > Seating arrangement > Circular Seating Arrangement:",
+    "Reasoning > Seating arrangement > Linear Arrangement",
+    "Reasoning > Seating arrangement > Double Row Arrangement",
+    "Reasoning > Seating arrangement > Circular Seating Arrangement",
     "Reasoning > Seating arrangement > Rectangular Arrangement",
     "Reasoning > Seating arrangement > direction based",
     "Reasoning > Blood relations > Introduction",
     "Reasoning > Blood relations > ssc model questions",
     "Reasoning > Blood relations > morethan 3 person relationship",
-    "Reasoning > Blood relations > Coded relations.",
+    "Reasoning > Blood relations > Coded relations",
     "Reasoning > Ranking > Total number of person given data",
     "Reasoning > Ranking > Rank from left or right",
     "Reasoning > Ranking > number of person btw two pwesons and eather sides of presons",
@@ -5679,8 +5679,8 @@ SSC_RAILWAYS_TRIPLETS: List[str] = [
     "Aptitude > SIMPLIFICATION > MISCELLANEOUS",
     "Aptitude > SIMPLIFICATION > LAW OF SURDS & INDICES",
     "Aptitude > SIMPLIFICATION > CONJUGATION",
-    "Aptitude > SIMPLIFICATION > COMPARISION OF SURDS (ROOT AND POWER)",
-    "Aptitude > SIMPLIFICATION > COMPARISION OF SURDS (ADDITION & SUBTRACTION)",
+    "Aptitude > SIMPLIFICATION > COMPARISON OF SURDS (ROOT AND POWER)",
+    "Aptitude > SIMPLIFICATION > COMPARISON OF SURDS (ADDITION & SUBTRACTION)",
     "Aptitude > SIMPLIFICATION > SQUARE ROOT OF AN IRRATIONAL NUMBER",
     "Aptitude > SIMPLIFICATION > SQUARE ROOT & CUBE ROOT",
     "Aptitude > SIMPLIFICATION > SPECIAL ROOT ADDITION, SUBTRACTION & MULTIPLICATION SERIES",
@@ -5861,7 +5861,7 @@ SSC_RAILWAYS_TRIPLETS: List[str] = [
     "Aptitude > GEOMETRY > Triangles-Properties of a triangle",
     "Aptitude > GEOMETRY > Triangles-Exterior angle property",
     "Aptitude > GEOMETRY > Triangles-basic question",
-    "Aptitude > GEOMETRY > Condition for formation of a triangle:",
+    "Aptitude > GEOMETRY > Condition for formation of a triangle",
     "Aptitude > GEOMETRY > Sine Rule",
     "Aptitude > GEOMETRY > Triangles-Stewart’s Theorem",
     "Aptitude > GEOMETRY > Triangles-Internal bisector",
@@ -5989,7 +5989,7 @@ SSC_RAILWAYS_TRIPLETS: List[str] = [
     "Aptitude > Trigonometry & HEIGHT AND DISTANCE > Basic identity (compound angles)",
     "Aptitude > Trigonometry & HEIGHT AND DISTANCE > Maximum & minimum value of trigonometrix",
     "Aptitude > Trigonometry & HEIGHT AND DISTANCE > HEIGHT & DISTANCE-basic concept",
-    "Aptitude > Trigonometry & HEIGHT AND DISTANCE > Based on Angle Changed:",
+    "Aptitude > Trigonometry & HEIGHT AND DISTANCE > Based on Angle Changed",
     "Aptitude > Trigonometry & HEIGHT AND DISTANCE > HEIGHT & DISTANCE-Complementary Angle",
     "Aptitude > Probability > Probability",
     "Aptitude > Statistics > Class intervals , Frequency",
@@ -6255,7 +6255,7 @@ SSC_RAILWAYS_TRIPLETS: List[str] = [
     "Miscellaneous > STATIC GK > Sports",
     "Miscellaneous > STATIC GK > Books and Authors",
     "Miscellaneous > STATIC GK > Famous Personality",
-    "Miscellaneous > STATIC GK > States G.K.",
+    "Miscellaneous > STATIC GK > States G.K",
     "Miscellaneous > STATIC GK > Organisation",
     "Miscellaneous > STATIC GK > World G.K",
     "Miscellaneous > STATIC GK > Full forms",
@@ -6421,20 +6421,20 @@ SSC_RAILWAYS_TRIPLET_DICT: Dict[str, Dict[str, str]] = {
         "topic": "mathematical operation",
         "subtopic": "equation balancing"
     },
-    "Reasoning > Seating arrangement > Linear Arrangement:": {
+    "Reasoning > Seating arrangement > Linear Arrangement": {
         "subject": "Reasoning",
         "topic": "Seating arrangement",
-        "subtopic": "Linear Arrangement:"
+        "subtopic": "Linear Arrangement"
     },
-    "Reasoning > Seating arrangement > Double Row Arrangement:": {
+    "Reasoning > Seating arrangement > Double Row Arrangement": {
         "subject": "Reasoning",
         "topic": "Seating arrangement",
-        "subtopic": "Double Row Arrangement:"
+        "subtopic": "Double Row Arrangement"
     },
-    "Reasoning > Seating arrangement > Circular Seating Arrangement:": {
+    "Reasoning > Seating arrangement > Circular Seating Arrangement": {
         "subject": "Reasoning",
         "topic": "Seating arrangement",
-        "subtopic": "Circular Seating Arrangement:"
+        "subtopic": "Circular Seating Arrangement"
     },
     "Reasoning > Seating arrangement > Rectangular Arrangement": {
         "subject": "Reasoning",
@@ -6461,10 +6461,10 @@ SSC_RAILWAYS_TRIPLET_DICT: Dict[str, Dict[str, str]] = {
         "topic": "Blood relations",
         "subtopic": "morethan 3 person relationship"
     },
-    "Reasoning > Blood relations > Coded relations.": {
+    "Reasoning > Blood relations > Coded relations": {
         "subject": "Reasoning",
         "topic": "Blood relations",
-        "subtopic": "Coded relations."
+        "subtopic": "Coded relations"
     },
     "Reasoning > Ranking > Total number of person given data": {
         "subject": "Reasoning",
@@ -6756,15 +6756,15 @@ SSC_RAILWAYS_TRIPLET_DICT: Dict[str, Dict[str, str]] = {
         "topic": "SIMPLIFICATION",
         "subtopic": "CONJUGATION"
     },
-    "Aptitude > SIMPLIFICATION > COMPARISION OF SURDS (ROOT AND POWER)": {
+    "Aptitude > SIMPLIFICATION > COMPARISON OF SURDS (ROOT AND POWER)": {
         "subject": "Aptitude",
         "topic": "SIMPLIFICATION",
-        "subtopic": "COMPARISION OF SURDS (ROOT AND POWER)"
+        "subtopic": "COMPARISON OF SURDS (ROOT AND POWER)"
     },
-    "Aptitude > SIMPLIFICATION > COMPARISION OF SURDS (ADDITION & SUBTRACTION)": {
+    "Aptitude > SIMPLIFICATION > COMPARISON OF SURDS (ADDITION & SUBTRACTION)": {
         "subject": "Aptitude",
         "topic": "SIMPLIFICATION",
-        "subtopic": "COMPARISION OF SURDS (ADDITION & SUBTRACTION)"
+        "subtopic": "COMPARISON OF SURDS (ADDITION & SUBTRACTION)"
     },
     "Aptitude > SIMPLIFICATION > SQUARE ROOT OF AN IRRATIONAL NUMBER": {
         "subject": "Aptitude",
@@ -7666,10 +7666,10 @@ SSC_RAILWAYS_TRIPLET_DICT: Dict[str, Dict[str, str]] = {
         "topic": "GEOMETRY",
         "subtopic": "Triangles-basic question"
     },
-    "Aptitude > GEOMETRY > Condition for formation of a triangle:": {
+    "Aptitude > GEOMETRY > Condition for formation of a triangle": {
         "subject": "Aptitude",
         "topic": "GEOMETRY",
-        "subtopic": "Condition for formation of a triangle:"
+        "subtopic": "Condition for formation of a triangle"
     },
     "Aptitude > GEOMETRY > Sine Rule": {
         "subject": "Aptitude",
@@ -8306,10 +8306,10 @@ SSC_RAILWAYS_TRIPLET_DICT: Dict[str, Dict[str, str]] = {
         "topic": "Trigonometry & HEIGHT AND DISTANCE",
         "subtopic": "HEIGHT & DISTANCE-basic concept"
     },
-    "Aptitude > Trigonometry & HEIGHT AND DISTANCE > Based on Angle Changed:": {
+    "Aptitude > Trigonometry & HEIGHT AND DISTANCE > Based on Angle Changed": {
         "subject": "Aptitude",
         "topic": "Trigonometry & HEIGHT AND DISTANCE",
-        "subtopic": "Based on Angle Changed:"
+        "subtopic": "Based on Angle Changed"
     },
     "Aptitude > Trigonometry & HEIGHT AND DISTANCE > HEIGHT & DISTANCE-Complementary Angle": {
         "subject": "Aptitude",
@@ -9636,10 +9636,10 @@ SSC_RAILWAYS_TRIPLET_DICT: Dict[str, Dict[str, str]] = {
         "topic": "STATIC GK",
         "subtopic": "Famous Personality"
     },
-    "Miscellaneous > STATIC GK > States G.K.": {
+    "Miscellaneous > STATIC GK > States G.K": {
         "subject": "Miscellaneous",
         "topic": "STATIC GK",
-        "subtopic": "States G.K."
+        "subtopic": "States G.K"
     },
     "Miscellaneous > STATIC GK > Organisation": {
         "subject": "Miscellaneous",
