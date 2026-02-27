@@ -9,10 +9,10 @@ import os
 OLLAMA_CONFIG = {
     "host": "http://localhost:11434",  # Local Ollama server
     "model": "qwen2.5:14b",  # 14B model - best accuracy that fits in 12GB VRAM
-    "timeout": 120,  # 2 minute timeout for 14B model
+    "timeout": 60,   # Reduced from 120s: model now fully on GPU so inference is faster
     "temperature": 0.1,  # Low temperature for consistency but allows some exploration
     "top_p": 0.7,  # More focused responses
-    "num_ctx": 32768,  # Explicit context window (matches qwen2.5:14b default)
+    "num_ctx": 8192,   # Reduced from 32768: KV cache ~1.3GB vs ~5.3GB → model runs fully on GPU
     "num_predict": 800,  # Limit output tokens for JSON response
     "max_retries": 3,  # Standard retries
     "retry_delay": 3  # seconds

@@ -42,6 +42,39 @@ except ImportError:
     OpenAIClient = None
 
 
+# ── Disambiguation hints injected into prompts ──────────────────────────────
+# Stage 1: Helps the model pick the correct SUBJECT for each exam.
+# Key failure mode: Banking coding/direction questions classified as English.
+STAGE1_EXAM_HINTS: Dict[str, str] = {
+    "Banking": """
+DISAMBIGUATION (Banking exam subjects):
+- Arrangement (Linear/Circular/Square/Tabular), Puzzles, Coding-Decoding, Blood Relations, Direction, Inequality, Syllogism, Series/Sequence, Alpha-Numeric → Reasoning
+- Grammar, Vocabulary, Fill in Blanks, Error Spotting, Sentence Rearrangement, Reading Comprehension, Match Columns, Cloze Test → English
+- Arithmetic, Percentage, Profit/Loss, Speed/Time/Distance, Data Interpretation, Quantitative problems → Aptitude""",
+    "TNPSC": "",    # Stage 1 subject detection works well for TNPSC
+    "SSC-Railways": "",
+}
+
+# Stage 2: Helps the model pick the correct TRIPLET within a subject.
+# Key failure mode: TNPSC LCM vs HCF application confusion; Banking Puzzle vs Inequality.
+STAGE2_SUBJECT_HINTS: Dict[tuple, str] = {
+    ("TNPSC", "Aptitude (Part B Unit 1)"): """
+LCM vs HCF KEY DISTINCTIONS:
+- "Distribute equally", "fill containers", "tile a floor", "arrange in rows/columns", "largest number that divides exactly", "greatest number that divides" → HCF: Application Sums - HCF-based
+- "Bells/alarms ring together", "traffic lights change together", "periodic events happen simultaneously", "after how long will they meet again" → LCM: Application Sums - LCM-based
+- Questions involving fractions where you find the LCM of numerator/denominator values → LCM: LCM of Fractions
+- "When divided by X leaves remainder Y" type problems → HCF: Problems on Remainders""",
+    ("Banking", "Reasoning"): """
+TOPIC DISTINCTIONS (Banking Reasoning):
+- Questions with symbols like "A > B means A is greater than B", "A @ B means A ≥ B" → Inequality
+- "In a certain code APPLE is written as...", letters/numbers are substituted → Coding decoding
+- "A walks North, turns East, walks X km..." → Direction
+- People sitting in a row, circle, square, hexagon → Linear/Circular/Square/etc. Arrangement
+- Multiple attributes assigned to people (floor/colour/profession) in tabular format → Tabular Puzzle""",
+}
+# ─────────────────────────────────────────────────────────────────────────────
+
+
 class ExamSpecificClassifier:
     """
     Two-stage question classifier using exam-specific taxonomies
@@ -168,13 +201,17 @@ class ExamSpecificClassifier:
 
         subjects_formatted = "\n".join([f"{i+1}. {s}" for i, s in enumerate(self.subjects)])
 
+        # Inject exam-level disambiguation hint if available
+        exam_hint = STAGE1_EXAM_HINTS.get(self.exam_type, "")
+        hint_section = f"\n{exam_hint}" if exam_hint.strip() else ""
+
         prompt = f"""You are classifying a question for the {self.exam_type} exam.
 
 QUESTION:
 {combined_context}
 
 AVAILABLE SUBJECTS (choose exactly one):
-{subjects_formatted}
+{subjects_formatted}{hint_section}
 
 INSTRUCTIONS:
 1. Read the question and explanation carefully
@@ -219,6 +256,10 @@ RULES:
 NOTE: Your previous attempt was rejected because the triplet was not copied exactly.
 Copy the COMPLETE triplet character-by-character from the list. Do not modify any part."""
 
+        # Inject subject-level disambiguation hint if available
+        subject_hint = STAGE2_SUBJECT_HINTS.get((self.exam_type, subject), "")
+        hint_section = f"\n{subject_hint}" if subject_hint.strip() else ""
+
         prompt = f"""You are classifying a question for the {self.exam_type} exam.
 The subject has been identified as: {subject}
 
@@ -227,7 +268,7 @@ QUESTION:
 
 AVAILABLE TRIPLETS for "{subject}" (choose exactly one):
 {triplets_formatted}
-{retry_note}
+{retry_note}{hint_section}
 INSTRUCTIONS:
 1. Read the question and explanation carefully
 2. Find the triplet that best matches the question content

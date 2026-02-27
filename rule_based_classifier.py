@@ -177,17 +177,63 @@ def create_default_rules() -> List[ClassificationRule]:
         case_sensitive=False
     ))
     
-    # Additional patterns can be added here for other exam types
-    # Example for future expansion:
-    # rules.append(ClassificationRule(
-    #     pattern=r"^If\s+.*?\s+then\s+what\s+is\s+the\s+value",
-    #     exam_type="TNPSC",
-    #     chapter="Aptitude",
-    #     topic="Problem Solving",
-    #     subtopic="Value Calculation",
-    #     description="Value calculation problems"
-    # ))
-    
+    # Banking: Coding-decoding questions ("In a certain code / language ...")
+    # These are unmistakably Reasoning > Coding decoding, never English.
+    rules.append(ClassificationRule(
+        pattern=r"^In\s+(a\s+)?certain\s+(code|language)\b",
+        exam_type="Banking",
+        chapter="Reasoning",
+        topic="Coding decoding",
+        subtopic="Coding in fictitious language",
+        description="Coding decoding - certain code/language pattern",
+        case_sensitive=False
+    ))
+
+    # Banking: If [WORD] is coded as [WORD] ... (alternate coding format)
+    rules.append(ClassificationRule(
+        pattern=r"^If\s+['\"]?[A-Z]{3,}['\"]?\s+is\s+(coded|written|represented)\s+as\s+['\"]?[A-Z0-9]{2,}",
+        exam_type="Banking",
+        chapter="Reasoning",
+        topic="Coding decoding",
+        subtopic="Letter coding",
+        description="Coding decoding - word coded as another word",
+        case_sensitive=False
+    ))
+
+    # Banking: Inequality questions with symbolic operators
+    # Pattern: "Statements: A > B ≥ C" or "In each question, relationship between..."
+    rules.append(ClassificationRule(
+        pattern=r"^In\s+(each|the)\s+(of\s+the\s+)?(following\s+)?question[s,]?\s*(,\s*)?relationship",
+        exam_type="Banking",
+        chapter="Reasoning",
+        topic="Inequality",
+        subtopic="Direct",
+        description="Inequality - relationship between elements",
+        case_sensitive=False
+    ))
+
+    # TNPSC: LCM application sums (bells/alarms ringing together)
+    rules.append(ClassificationRule(
+        pattern=r".*(bell[s]?|alarm[s]?|light[s]?|lamp[s]?|signal[s]?).{0,40}(ring|rings|rang|blink|blinks|flash|flashes).{0,30}(together|simultaneously|same\s+time)",
+        exam_type="TNPSC",
+        chapter="Aptitude (Part B Unit 1)",
+        topic="Lowest Common Multiple (LCM)",
+        subtopic="Application Sums - LCM-based (alarms, traffic lights, periodic events)",
+        description="LCM application - bells/alarms/lights ringing together",
+        case_sensitive=False
+    ))
+
+    # TNPSC: HCF application sums (largest number that divides exactly)
+    rules.append(ClassificationRule(
+        pattern=r".*(greatest|largest|highest)\s+(number|value).{0,30}(exact(ly)?|completely)\s+divid",
+        exam_type="TNPSC",
+        chapter="Aptitude (Part B Unit 1)",
+        topic="Highest Common Factor (HCF)",
+        subtopic="Application Sums - HCF-based (e.g., dividing items, grouping problems)",
+        description="HCF application - greatest number that divides exactly",
+        case_sensitive=False
+    ))
+
     return rules
 
 
